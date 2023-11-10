@@ -1,6 +1,5 @@
-MAINTAINER Theo@keennews.nl
-
 FROM caddy:builder AS builder
+MAINTAINER Theo@keennews.nl
 
 RUN apk add -q --progress --update --no-cache git ca-certificates tzdata
 RUN mkdir -p /caddydir/data && \
@@ -16,6 +15,7 @@ COPY --from=builder /usr/bin/caddy /usr/bin/caddy
 
 
 FROM scratch
+MAINTAINER Theo@keennews.nl
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
