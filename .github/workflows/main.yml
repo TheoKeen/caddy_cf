@@ -3,6 +3,8 @@ name: Publish Docker image
 on:
   release:
     types: [published]
+  schedule:
+    - cron:  '30 13 * * *'
   workflow_dispatch:
     inputs:
       logLevel:
