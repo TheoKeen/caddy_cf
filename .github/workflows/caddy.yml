@@ -58,7 +58,7 @@ jobs:
       contents: write
     env:
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_NAMESPACE: ${{ vars.DOCKER_NAMESPACE || github.repository_owner }}
     steps:
       # Use current default-branch state even when a queued run has an older event SHA.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -93,9 +93,9 @@ jobs:
           import re
           import subprocess
 
-          namespace = os.environ["DOCKER_USERNAME"].strip().lower()
+          namespace = os.environ["DOCKER_NAMESPACE"].strip().lower()
           if not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", namespace):
-              raise SystemExit("DOCKER_USERNAME must contain a Docker Hub username")
+              raise SystemExit("DOCKER_NAMESPACE must contain a Docker Hub namespace")
           revision = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
           created = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
           with open(os.environ["GITHUB_OUTPUT"], "a") as output:

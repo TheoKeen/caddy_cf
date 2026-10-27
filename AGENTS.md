@@ -209,10 +209,14 @@ password: ${{ secrets.DOCKER_PASSWORD }}
 
 These names must remain unchanged.
 
+Use these secrets for authentication. The image namespace defaults to the repository
+owner (`theokeen`) and can be overridden with the optional `DOCKER_NAMESPACE` Actions
+variable. A login identity may be an email address and must not determine image names.
+
 Publish to:
 
 ```text
-docker.io/<DOCKER_USERNAME>/caddy-cloudflare
+docker.io/<DOCKER_NAMESPACE>/caddy-cloudflare
 ```
 
 Use the tags:

@@ -11,8 +11,10 @@ The process runs as UID/GID `10001:10001` and receives SIGTERM directly.
 
 ## Image and tags
 
-Images are published to `docker.io/<DOCKER_USERNAME>/caddy-cloudflare`.
-Every verified stable Caddy release receives four tags:
+Images are published to `docker.io/<namespace>/caddy-cloudflare`.
+The namespace defaults to the repository owner (`theokeen`), matching the existing
+publisher account. Set the optional Actions variable `DOCKER_NAMESPACE` to override
+it. Every verified stable Caddy release receives four tags:
 
 | Tag | Meaning |
 | --- | --- |
@@ -29,7 +31,7 @@ and OCI index digest. Earlier receipts remain in Git history and workflow artifa
 
 ## Run
 
-Replace `YOUR_DOCKER_USERNAME` with the configured publisher's username:
+Replace `YOUR_DOCKER_NAMESPACE` with the configured publisher's username:
 
 ```sh
 docker run -d --name caddy --restart unless-stopped \
@@ -41,7 +43,7 @@ docker run -d --name caddy --restart unless-stopped \
   --mount type=volume,src=caddy_data,dst=/data \
   --mount type=volume,src=caddy_config,dst=/config \
   --env-file /secure/path/caddy.env \
-  docker.io/YOUR_DOCKER_USERNAME/caddy-cloudflare:stable
+  docker.io/YOUR_DOCKER_NAMESPACE/caddy-cloudflare:stable
 ```
 
 The bundled Caddyfile returns an HTTP response on port 80 and requests no certificates.
@@ -71,7 +73,7 @@ Docker Compose example (`compose.yaml`):
 ```yaml
 services:
   caddy:
-    image: docker.io/${DOCKER_USERNAME:?set publisher username}/caddy-cloudflare:stable
+    image: docker.io/${DOCKER_NAMESPACE:?set publisher namespace}/caddy-cloudflare:stable
     restart: unless-stopped
     ports:
       - "80:80"
@@ -171,12 +173,14 @@ and variables → Actions**:
 
 | Name | Kind | Value |
 | --- | --- | --- |
-| `DOCKER_USERNAME` | Secret | Docker Hub account/namespace |
+| `DOCKER_USERNAME` | Secret | Docker Hub login identity (username or email) |
 | `DOCKER_PASSWORD` | Secret | Docker Hub access token with write access to `caddy-cloudflare` |
 
 The workflow uses `${{ secrets.DOCKER_USERNAME }}` and
-`${{ secrets.DOCKER_PASSWORD }}` unchanged. The image namespace is lowercased and
-surrounding whitespace is trimmed to produce a valid Docker reference. No credentials
+`${{ secrets.DOCKER_PASSWORD }}` unchanged. The image namespace comes from
+`DOCKER_NAMESPACE` or the repository owner, independently of the login identity,
+which may be an email address. The namespace is lowercased and surrounding
+whitespace is trimmed to produce a valid Docker reference. No credentials
 belong in source files.
 Confirm that the destination Docker Hub repository exists and that Actions can push
 tracking commits to `main`. The default token grants read access globally and write
