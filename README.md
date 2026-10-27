@@ -175,7 +175,9 @@ and variables → Actions**:
 | `DOCKER_PASSWORD` | Secret | Docker Hub access token with write access to `caddy-cloudflare` |
 
 The workflow uses `${{ secrets.DOCKER_USERNAME }}` and
-`${{ secrets.DOCKER_PASSWORD }}` unchanged. No credentials belong in source files.
+`${{ secrets.DOCKER_PASSWORD }}` unchanged. The image namespace is lowercased and
+surrounding whitespace is trimmed to produce a valid Docker reference. No credentials
+belong in source files.
 Confirm that the destination Docker Hub repository exists and that Actions can push
 tracking commits to `main`. The default token grants read access globally and write
 access only to the trusted release job. No Docker Hub credentials reach pull request jobs.

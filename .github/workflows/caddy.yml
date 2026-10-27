@@ -86,15 +86,22 @@ jobs:
       - name: Prepare image metadata
         if: steps.upstream.outputs.rebuild_required == 'true'
         id: image
-        env:
-          VERSION: ${{ steps.upstream.outputs.version }}
+        shell: python
         run: |
-          test -n "$DOCKER_USERNAME" || { echo 'Set the DOCKER_USERNAME Actions secret'; exit 1; }
-          {
-            echo "name=docker.io/$DOCKER_USERNAME/caddy-cloudflare"
-            echo "revision=$(git rev-parse HEAD)"
-            echo "created=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          } >> "$GITHUB_OUTPUT"
+          from datetime import datetime, timezone
+          import os
+          import re
+          import subprocess
+
+          namespace = os.environ["DOCKER_USERNAME"].strip().lower()
+          if not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", namespace):
+              raise SystemExit("DOCKER_USERNAME must contain a Docker Hub username")
+          revision = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+          created = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"name=docker.io/{namespace}/caddy-cloudflare\n")
+              output.write(f"revision={revision}\n")
+              output.write(f"created={created}\n")
       - name: Enable multi-platform local image storage and attestations
         if: steps.upstream.outputs.rebuild_required == 'true'
         uses: docker/setup-docker-action@7ec28a010822b4626af4874f9448a4b05ac6f3e5 # v5.6.0
