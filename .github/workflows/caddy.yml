@@ -1,0 +1,174 @@
+name: Caddy Cloudflare
+
+on:
+  schedule:
+    - cron: '23 5 * * 1'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - Dockerfile
+      - Caddyfile
+      - .dockerignore
+      - scripts/**
+      - tests/**
+      - upstream/caddy-version.txt
+      - .github/workflows/caddy.yml
+  pull_request:
+    paths:
+      - Dockerfile
+      - Caddyfile
+      - .dockerignore
+      - scripts/**
+      - tests/**
+      - upstream/**
+      - .github/workflows/caddy.yml
+
+permissions:
+  contents: read
+
+# Serialize the entire release, including tracking commits and tag promotion.
+# PR checks have their own groups and cannot interrupt a release.
+concurrency:
+  group: caddy-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'release' }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13'
+      - run: python3 -m unittest discover -s tests -v
+      - run: sh -n scripts/verify_image.sh
+
+  release:
+    needs: test
+    if: >-
+      github.repository == 'TheoKeen/caddy_cf' &&
+      github.event_name != 'pull_request' &&
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    env:
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
+    steps:
+      # Use current default-branch state even when a queued run has an older event SHA.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13'
+      - name: Test checked-out release sources
+        run: python3 -m unittest discover -s tests -v
+      - name: Check upstream and refresh dependencies weekly, manually, and on source changes
+        id: upstream
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/update_upstream.py --force-rebuild
+      - name: Record upstream check and release history
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add upstream/caddy-version.txt upstream/state.json upstream/CADDY_CHANGES.md
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore: record upstream Caddy check'
+            git push origin "HEAD:$DEFAULT_BRANCH"
+          fi
+      - name: Prepare image metadata
+        if: steps.upstream.outputs.rebuild_required == 'true'
+        id: image
+        env:
+          VERSION: ${{ steps.upstream.outputs.version }}
+        run: |
+          test -n "$DOCKERHUB_USERNAME" || { echo 'Set the DOCKERHUB_USERNAME Actions variable'; exit 1; }
+          {
+            echo "name=docker.io/$DOCKERHUB_USERNAME/caddy-cloudflare"
+            echo "revision=$(git rev-parse HEAD)"
+            echo "created=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } >> "$GITHUB_OUTPUT"
+      - name: Enable multi-platform local image storage and attestations
+        if: steps.upstream.outputs.rebuild_required == 'true'
+        uses: docker/setup-docker-action@7ec28a010822b4626af4874f9448a4b05ac6f3e5 # v5.6.0
+        with:
+          daemon-config: |
+            {"features": {"containerd-snapshotter": true}}
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+        if: steps.upstream.outputs.rebuild_required == 'true'
+        with:
+          platforms: arm64
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        if: steps.upstream.outputs.rebuild_required == 'true'
+        with:
+          driver: docker
+      - name: Build once into local image store
+        if: steps.upstream.outputs.rebuild_required == 'true'
+        id: build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          load: true
+          push: false
+          pull: true
+          # Refresh xcaddy's floating plugin and transitive dependencies on every release run.
+          no-cache-filters: builder
+          tags: ${{ steps.image.outputs.name }}:${{ steps.upstream.outputs.version }}
+          build-args: |
+            CADDY_VERSION=${{ steps.upstream.outputs.version }}
+            VCS_REF=${{ steps.image.outputs.revision }}
+            BUILD_DATE=${{ steps.image.outputs.created }}
+          cache-from: type=gha,scope=caddy
+          cache-to: type=gha,mode=max,scope=caddy
+          provenance: mode=max
+          sbom: true
+      - name: Verify both architectures before logging in or pushing
+        if: steps.upstream.outputs.rebuild_required == 'true'
+        env:
+          IMAGE: ${{ steps.image.outputs.name }}
+          VERSION: ${{ steps.upstream.outputs.version }}
+          REVISION: ${{ steps.image.outputs.revision }}
+        run: |
+          sh scripts/verify_image.sh "$IMAGE:$VERSION" "$VERSION" --platform linux/amd64 --revision "$REVISION"
+          sh scripts/verify_image.sh "$IMAGE:$VERSION" "$VERSION" --platform linux/arm64 --revision "$REVISION"
+      - name: Reject stale source state before publishing
+        if: steps.upstream.outputs.rebuild_required == 'true'
+        run: |
+          remote_head=$(git ls-remote origin "refs/heads/$DEFAULT_BRANCH" | cut -f1)
+          test "$remote_head" = "$(git rev-parse HEAD)" || { echo 'Default branch changed; rerun with current sources'; exit 1; }
+      - name: Log in to Docker Hub
+        if: steps.upstream.outputs.rebuild_required == 'true'
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Publish verified index and record registry digest
+        id: publish
+        if: steps.upstream.outputs.rebuild_required == 'true'
+        env:
+          IMAGE: ${{ steps.image.outputs.name }}
+          VERSION: ${{ steps.upstream.outputs.version }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: python3 scripts/publish_image.py "$IMAGE" "$VERSION" "$DIGEST"
+      - name: Commit publication receipt
+        if: steps.upstream.outputs.rebuild_required == 'true'
+        run: |
+          git add upstream/publication.json
+          git commit -m 'chore: record verified Docker Hub publication'
+          # A concurrent user push must not be overwritten. A failed receipt push is visible.
+          git push origin "HEAD:$DEFAULT_BRANCH"
+      - name: Preserve publication receipt even if its Git push fails
+        if: always() && steps.publish.outcome == 'success'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: publication-${{ github.run_id }}-${{ github.run_attempt }}
+          path: upstream/publication.json
+          if-no-files-found: ignore

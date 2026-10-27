@@ -1,0 +1,15 @@
+{
+  "history": [
+    {
+      "version": "2.11.7",
+      "tag": "v2.11.7",
+      "url": "https://github.com/caddyserver/caddy/releases/tag/v2.11.7",
+      "published_at": "2026-10-03T05:58:33Z",
+      "recorded_on": "2026-10-27"
+    }
+  ],
+  "schema": 1,
+  "version": "2.11.7",
+  "checked_on": "2026-10-27",
+  "source": "https://api.github.com/repos/caddyserver/caddy/releases?per_page=100"
+}

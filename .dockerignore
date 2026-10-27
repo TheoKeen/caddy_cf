@@ -1,0 +1,5 @@
+**
+!Dockerfile
+!Caddyfile
+!upstream/
+!upstream/caddy-version.txt

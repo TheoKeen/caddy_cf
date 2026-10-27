@@ -1,0 +1,8 @@
+{
+	admin off
+	auto_https off
+}
+
+:80 {
+	respond "Caddy with Cloudflare DNS is running"
+}
