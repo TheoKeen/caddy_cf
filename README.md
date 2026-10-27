@@ -11,7 +11,7 @@ The process runs as UID/GID `10001:10001` and receives SIGTERM directly.
 
 ## Image and tags
 
-Images are published to `docker.io/<DOCKERHUB_USERNAME>/caddy-cloudflare`.
+Images are published to `docker.io/<DOCKER_USERNAME>/caddy-cloudflare`.
 Every verified stable Caddy release receives four tags:
 
 | Tag | Meaning |
@@ -29,7 +29,7 @@ and OCI index digest. Earlier receipts remain in Git history and workflow artifa
 
 ## Run
 
-Replace `YOUR_DOCKERHUB_USERNAME` with the configured publisher's username:
+Replace `YOUR_DOCKER_USERNAME` with the configured publisher's username:
 
 ```sh
 docker run -d --name caddy --restart unless-stopped \
@@ -41,7 +41,7 @@ docker run -d --name caddy --restart unless-stopped \
   --mount type=volume,src=caddy_data,dst=/data \
   --mount type=volume,src=caddy_config,dst=/config \
   --env-file /secure/path/caddy.env \
-  docker.io/YOUR_DOCKERHUB_USERNAME/caddy-cloudflare:stable
+  docker.io/YOUR_DOCKER_USERNAME/caddy-cloudflare:stable
 ```
 
 The bundled Caddyfile returns an HTTP response on port 80 and requests no certificates.
@@ -71,7 +71,7 @@ Docker Compose example (`compose.yaml`):
 ```yaml
 services:
   caddy:
-    image: docker.io/${DOCKERHUB_USERNAME:?set publisher username}/caddy-cloudflare:stable
+    image: docker.io/${DOCKER_USERNAME:?set publisher username}/caddy-cloudflare:stable
     restart: unless-stopped
     ports:
       - "80:80"
@@ -166,16 +166,16 @@ Actions are pinned to reviewed commits and Dependabot proposes weekly action upd
 
 ## GitHub setup
 
-Preserve and reuse these existing repository settings under **Settings → Secrets
+Preserve and reuse these existing repository secrets under **Settings → Secrets
 and variables → Actions**:
 
 | Name | Kind | Value |
 | --- | --- | --- |
-| `DOCKERHUB_USERNAME` | Variable | Docker Hub account/namespace |
-| `DOCKERHUB_TOKEN` | Secret | Docker Hub access token with write access to `caddy-cloudflare` |
+| `DOCKER_USERNAME` | Secret | Docker Hub account/namespace |
+| `DOCKER_PASSWORD` | Secret | Docker Hub access token with write access to `caddy-cloudflare` |
 
-The workflow uses `${{ vars.DOCKERHUB_USERNAME }}` and
-`${{ secrets.DOCKERHUB_TOKEN }}` unchanged. No credentials belong in source files.
+The workflow uses `${{ secrets.DOCKER_USERNAME }}` and
+`${{ secrets.DOCKER_PASSWORD }}` unchanged. No credentials belong in source files.
 Confirm that the destination Docker Hub repository exists and that Actions can push
 tracking commits to `main`. The default token grants read access globally and write
 access only to the trusted release job. No Docker Hub credentials reach pull request jobs.
@@ -238,7 +238,7 @@ Troubleshooting:
 - Binding 80/443 fails: apply the namespace sysctl shown above, or configure Caddy to use higher ports.
 - Cloudflare authentication/zone errors: check the token's zone scope and both required permissions.
 - Tracking commit fails: review branch protection and the release job's `contents: write` permission.
-- Publishing fails: verify the existing Actions variable/secret, namespace, and Docker Hub token scope.
+- Publishing fails: verify the existing Actions secrets, namespace, and Docker Hub token scope.
 
 Use `docker logs caddy` and `docker exec caddy version` for diagnostics; `docker exec
 caddy sh` cannot work because the image contains no shell. Do not run

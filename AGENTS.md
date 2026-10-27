@@ -39,10 +39,10 @@ Preserve these existing GitHub Actions configurations:
 
 | Name | Type | Requirement |
 |---|---|---|
-| `DOCKERHUB_USERNAME` | GitHub Actions variable | Preserve and reuse |
-| `DOCKERHUB_TOKEN` | GitHub Actions secret | Preserve and reuse |
+| `DOCKER_USERNAME` | GitHub Actions secret | Preserve and reuse |
+| `DOCKER_PASSWORD` | GitHub Actions secret | Preserve and reuse |
 
-Do not rename these variables, change their intended purpose, overwrite their values, or replace them with hardcoded credentials.
+Do not rename these secrets, change their intended purpose, overwrite their values, or replace them with hardcoded credentials.
 
 The agent may update all other repository files and configuration as necessary.
 
@@ -200,11 +200,11 @@ Document the limitation and an optional external workflow trigger.
 
 ## 7. Docker Hub publishing
 
-Use the existing GitHub Actions variable and secret:
+Use the existing GitHub Actions secrets:
 
 ```yaml
-username: ${{ vars.DOCKERHUB_USERNAME }}
-password: ${{ secrets.DOCKERHUB_TOKEN }}
+username: ${{ secrets.DOCKER_USERNAME }}
+password: ${{ secrets.DOCKER_PASSWORD }}
 ```
 
 These names must remain unchanged.
@@ -212,7 +212,7 @@ These names must remain unchanged.
 Publish to:
 
 ```text
-docker.io/<DOCKERHUB_USERNAME>/caddy-cloudflare
+docker.io/<DOCKER_USERNAME>/caddy-cloudflare
 ```
 
 Use the tags:
@@ -301,7 +301,7 @@ Document:
 - How stable release tracking works.
 - How GitHub Actions builds and publishes images.
 - Docker Hub image naming and tags.
-- Docker Hub variable and secret configuration.
+- Docker Hub secrets configuration.
 - How to run the image.
 - Docker Compose examples.
 - Cloudflare DNS configuration.
@@ -345,7 +345,7 @@ The task is complete when:
 
 - [ ] The implementation exists in `TheoKeen/caddy_cf`.
 - [ ] Obsolete project files have been replaced or removed as necessary.
-- [ ] Existing Docker Hub variable and secret names are preserved.
+- [ ] Existing Docker Hub secret names are preserved.
 - [ ] Stable Caddy 2 releases are tracked automatically.
 - [ ] Upstream changes are recorded in Git.
 - [ ] Caddy is compiled with the Cloudflare DNS plugin.
@@ -365,7 +365,7 @@ Work directly in `https://github.com/TheoKeen/caddy_cf`.
 
 1. Clone or open the existing repository.
 2. Inspect the current project files and GitHub Actions configuration.
-3. Preserve the existing Docker Hub variable and secret.
+3. Preserve the existing Docker Hub secrets.
 4. Verify current upstream Caddy and Docker recommendations.
 5. Replace or restructure obsolete files as needed.
 6. Implement the Dockerfile.
