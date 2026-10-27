@@ -1,0 +1,18 @@
+{
+  "version": "2.11.7",
+  "image": "docker.io/theokeen/caddy-cloudflare",
+  "digest": "sha256:1d358afcd6733d69ece8cf374083b91bd9ca8fd8fe6630b3f6c9ad92870d00c2",
+  "tags": [
+    "2.11.7",
+    "2.11",
+    "2",
+    "stable"
+  ],
+  "platforms": [
+    "linux/amd64",
+    "linux/arm64"
+  ],
+  "published_at": "2026-10-27T11:11:58.722622+00:00",
+  "source_revision": "6750c0ae23f1bb0b2f3f290c900631ba0b4aa9cc",
+  "workflow_run": "40493557079"
+}
