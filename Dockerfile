@@ -6,7 +6,7 @@ ARG TARGETARCH
 ENV CGO_ENABLED=0 \
     XCADDY_SETCAP=0 \
     XCADDY_PRINT_VERSION=0 \
-    XCADDY_GO_BUILD_FLAGS="-trimpath -ldflags '-s -w'"
+    XCADDY_GO_BUILD_FLAGS="-trimpath -tags nobadger,nomysql,nopgx -ldflags '-s -w'"
 
 COPY upstream/caddy-version.txt /tmp/caddy-version.txt
 RUN GOOS="$TARGETOS" GOARCH="$TARGETARCH" \

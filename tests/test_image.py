@@ -7,7 +7,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from publish_image import tags_for, validate_index, validate_attestation
-from verify_image import verify_elf, verify_rootfs
+from verify_image import verify_elf, verify_rootfs, verify_build_info
 
 
 def elf(architecture="amd64", dynamic=False, symbols=False):
@@ -22,6 +22,14 @@ def elf(architecture="amd64", dynamic=False, symbols=False):
 
 
 class ImageTests(unittest.TestCase):
+    def test_size_reduction_tags_in_compiled_binary(self):
+        verify_build_info("go\tgo1.27.3\nbuild\t-tags=nopgx,nobadger,nomysql\nbuild\tCGO_ENABLED=0\n")
+
+    def test_missing_size_reduction_tags_are_rejected(self):
+        for output in ("", "build\t-trimpath=true\n", "build\t-tags=nobadger,nomysql\n"):
+            with self.subTest(output=output), self.assertRaisesRegex(ValueError, "size-reduction build tags"):
+                verify_build_info(output)
+
     def test_both_architectures_static_and_stripped(self):
         for architecture in ("amd64", "arm64"):
             verify_elf(elf(architecture), architecture)

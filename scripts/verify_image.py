@@ -67,6 +67,16 @@ def verify_rootfs(archive, architecture):
         require(b"-----BEGIN CERTIFICATE-----" in certificates, "Invalid CA certificate bundle")
 
 
+def verify_build_info(output):
+    required_tags = {"nobadger", "nomysql", "nopgx"}
+    tags = set()
+    for line in output.splitlines():
+        if line.startswith("build\t-tags="):
+            tags.update(line.split("=", 1)[1].split(","))
+    require(required_tags.issubset(tags),
+            "Missing size-reduction build tags: " + ", ".join(sorted(required_tags - tags)))
+
+
 def verify(image, version, platform, revision=None, emulator=None, preserve_argv0=False):
     architecture = platform.split("/")[1]
     metadata = json.loads(docker("image", "inspect", "--platform", platform, image))[0]
@@ -94,6 +104,7 @@ def verify(image, version, platform, revision=None, emulator=None, preserve_argv
     require(re.match(rf"^v{re.escape(version)}(?:\s|$)", output), f"Wrong Caddy version: {output}")
     modules = docker("run", "--rm", *secure, "--network=none", *execution, "list-modules")
     require("dns.providers.cloudflare" in modules.splitlines(), "Missing Cloudflare DNS plugin")
+    verify_build_info(docker("run", "--rm", *secure, "--network=none", *execution, "build-info"))
     container = docker("create", *secure, image)
     try:
         verify_rootfs(docker("export", container, binary=True), architecture)

@@ -142,6 +142,8 @@ Each release run:
 1. Tests the current default-branch sources, checks upstream, and commits tracking changes.
 2. Pulls `caddy:2-builder-alpine` and reruns `xcaddy` with the current Cloudflare plugin.
    Cross compilation uses the runner's native builder, `CGO_ENABLED=0`, and stripped symbols.
+   The `nobadger,nomysql,nopgx` build tags exclude database drivers, matching xcaddy's
+   size-saving defaults; ordinary file storage and Cloudflare DNS remain available.
 3. Builds **once**, with Buildx caching, maximum OCI provenance, and SBOMs, into a local
    containerd image store. QEMU enables ARM64 runtime checks on the AMD64 runner.
 4. Verifies both architectures before any registry login or upload.
@@ -228,8 +230,9 @@ sh scripts/verify_image.sh caddy-cloudflare:test "$(cat upstream/caddy-version.t
 
 The version file controls the compiled version. The matching `CADDY_VERSION` build
 argument supplies its OCI label. Verification catches a mismatch. The verifier
-checks the reported version, Cloudflare module, static ELF headers, stripped symbols,
-architecture, non-root user, OCI labels, CA bundle, persistence ownership, exact
+checks the reported version, Cloudflare module, database-exclusion build tags, static
+ELF headers, stripped symbols, architecture, non-root user, OCI labels, CA bundle,
+persistence ownership, exact
 runtime file allowlist, representative DNS Caddyfile validation, HTTP startup with
 all capabilities dropped and a read-only root filesystem, and graceful termination.
 Unit tests exercise release filtering, semantic comparison, pagination, authentication,
