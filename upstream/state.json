@@ -6,10 +6,24 @@
       "url": "https://github.com/caddyserver/caddy/releases/tag/v2.11.7",
       "published_at": "2026-10-03T05:58:33Z",
       "recorded_on": "2026-10-27"
+    },
+    {
+      "version": "2.11.8",
+      "tag": "v2.11.8",
+      "url": "https://github.com/caddyserver/caddy/releases/tag/v2.11.8",
+      "published_at": "2026-11-04T01:16:09Z",
+      "recorded_on": "2026-11-09"
+    },
+    {
+      "version": "2.11.9",
+      "tag": "v2.11.9",
+      "url": "https://github.com/caddyserver/caddy/releases/tag/v2.11.9",
+      "published_at": "2026-11-05T01:30:24Z",
+      "recorded_on": "2026-11-09"
     }
   ],
   "schema": 1,
-  "version": "2.11.7",
-  "checked_on": "2026-11-02",
+  "version": "2.11.9",
+  "checked_on": "2026-11-09",
   "source": "https://api.github.com/repos/caddyserver/caddy/releases?per_page=100"
 }
