@@ -24,6 +24,6 @@
   ],
   "schema": 1,
   "version": "2.11.9",
-  "checked_on": "2026-11-16",
+  "checked_on": "2026-11-23",
   "source": "https://api.github.com/repos/caddyserver/caddy/releases?per_page=100"
 }
